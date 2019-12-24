@@ -1,4 +1,15 @@
-import os
+if __name__ == '__main__':
+    import os
+    gpu_use = 2
+    print('GPU use: {}'.format(gpu_use))
+    os.environ["KERAS_BACKEND"] = "tensorflow"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_use)
+
+    import tensorflow as tf
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    session = tf.Session(config=config)
+
 import numpy as np
 
 from CustomOps.customOps import SetSession
@@ -45,11 +56,11 @@ def CreateModel(input_shape, nb_classes, parameters):
     if K.backend() == 'theano':
         output = BinaryNetActivation()(output)
 
-    output = layerType(input=output, nb_filters=32, border='valid', kernel_size=(3, 3), stride=(1, 1))
-    output = layerType(input=output, nb_filters=32, border='valid', kernel_size=(3, 3), stride=(1, 1))
-    output = layerType(input=output, nb_filters=32, border='valid', kernel_size=(3, 3), stride=(1, 1))
-    output = layerType(input=output, nb_filters=32, border='valid', kernel_size=(3, 3), stride=(1, 1))
-    output = layerType(input=output, nb_filters=32, border='valid', kernel_size=(3, 3), stride=(1, 1))
+    output = layerType(input=output, use_bias=False, nb_filters=32, border='valid', kernel_size=(3, 3), stride=(1, 1))
+    output = layerType(input=output, use_bias=False, nb_filters=32, border='valid', kernel_size=(3, 3), stride=(1, 1))
+    output = layerType(input=output, use_bias=False, nb_filters=32, border='valid', kernel_size=(3, 3), stride=(1, 1))
+    output = layerType(input=output, use_bias=False, nb_filters=32, border='valid', kernel_size=(3, 3), stride=(1, 1))
+    output = layerType(input=output, use_bias=False, nb_filters=32, border='valid', kernel_size=(3, 3), stride=(1, 1))
 
     output = Flatten()(output)
     output = Dense(nb_classes, use_bias=True, activation='softmax')(output)
@@ -68,12 +79,13 @@ def CreateModel(input_shape, nb_classes, parameters):
 modelDirectory = os.getcwd()
 
 parameters = NetworkParameters(modelDirectory)
-parameters.nb_epochs = 1
+parameters.nb_epochs = 20
 parameters.batch_size = 32
 parameters.lr = 0.0005
 parameters.batch_scale_factor = 8
 parameters.decay = 0.001
 
+# parameters.binarisation_type = 'BinaryNet' # Either 'BinaryNet' or 'XNORNet'
 parameters.binarisation_type = 'BinaryNet' # Either 'BinaryNet' or 'XNORNet'
 
 parameters.lr *= parameters.batch_scale_factor
@@ -136,5 +148,5 @@ model.fit(x=X_train,
 print('Testing')
 modelTest = load_model(filepath=parameters.bestModelSaveName, custom_objects=customLayersDictionary)
 
-validationAccuracy = model.evaluate(X_test, y_test_cat, verbose=0)
-print('\nBest Keras validation accuracy is : %f \n' % (100.0 * validationAccuracy[1]))
+validationAccuracy = modelTest.evaluate(X_test, y_test_cat, verbose=0)
+print('\nBest Keras test accuracy is : %f \n' % (100.0 * validationAccuracy[1]))
